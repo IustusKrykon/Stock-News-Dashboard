@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stock Market Dashboard</title>
+    <!-- Basic Styling -->
+    <style>
+        body { font-family: sans-serif; line-height: 1.6; margin: 20px; background-color: #f4f4f4; }
+        .container { max-width: 1200px; margin: auto; background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+        h1 { text-align: center; color: #333; }
+        .company-section {
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            margin-bottom: 30px;
+            padding: 20px;
+            background-color: #ffffff;
+        }
+        .company-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 10px;
+            margin-bottom: 15px;
+        }
+        .company-header h2 { margin: 0; color: #0056b3; }
+        .stock-info { text-align: right; }
+        .stock-price { font-size: 1.4em; font-weight: bold; }
+        .stock-change { font-size: 1em; margin-left: 10px; }
+        .positive { color: green; }
+        .negative { color: red; }
+        .news-list { list-style: none; padding: 0; }
+        .news-item { border-bottom: 1px dashed #eee; padding-bottom: 10px; margin-bottom: 10px; }
+        .news-item:last-child { border-bottom: none; }
+        .news-item a { text-decoration: none; color: #0056b3; font-weight: bold; }
+        .news-item a:hover { text-decoration: underline; }
+        .news-item p { margin: 5px 0 0 0; color: #555; font-size: 0.9em; }
+        .news-item small { color: #777; font-size: 0.8em; }
+        .graph-container { margin-bottom: 20px; }
+        /* Make Plotly graphs responsive */
+        .plotly-graph-div { width: 100% !important; }
+    </style>
+    <!-- Plotly.js CDN (included via pio.to_html, but good practice to have it potentially) -->
+    <!-- <script src='https://cdn.plot.ly/plotly-latest.min.js'></script> -->
+</head>
+<body>
+    <div class="container">
+        <h1>Stock & News Dashboard</h1>
+
+        {% for ticker in tickers %}
+            {% set data = all_data[ticker] %}
+            <div class="company-section">
+                <div class="company-header">
+                    <h2>{{ data.display_name }} ({{ ticker }})</h2>
+                    <div class="stock-info">
+                        {% if data.stock.current_price != 'N/A' %}
+                            <span class="stock-price">{{ "%.2f"|format(data.stock.current_price) }} {{ data.stock.currency }}</span>
+                            {% if data.stock.change is not none %}
+                                <span class="stock-change {% if data.stock.change >= 0 %}positive{% else %}negative{% endif %}">
+                                    {{ "%+.2f"|format(data.stock.change) }}
+                                    ({{ "%.2f"|format(data.stock.change_percent) }}%)
+                                </span>
+                            {% endif %}
+                        {% else %}
+                            <span class="stock-price">Data Unavailable</span>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="graph-container">
+                    {{ data.graph | safe }} {# Use safe filter to render HTML #}
+                </div>
+
+                <h3>Recent News</h3>
+                {% if data.news %}
+                    <ul class="news-list">
+                        {% for article in data.news %}
+                            <li class="news-item">
+                                <a href="{{ article.url }}" target="_blank" rel="noopener noreferrer">{{ article.title }}</a>
+                                <p>{{ article.description | default('No description available.') }}</p>
+                                <small>Source: {{ article.source.name }} | Published: {{ article.publishedAt[:10] }}</small> {# Show only date part #}
+                            </li>
+                        {% endfor %}
+                    </ul>
+                {% else %}
+                    <p>No recent news found or could not fetch news.</p>
+                {% endif %}
+            </div>
+        {% endfor %}
+    </div>
+</body>
+</html>
